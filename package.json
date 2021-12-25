@@ -1,0 +1,33 @@
+{
+  "name": "fangfis-cli-build",
+  "version": "1.1.11",
+  "author": "@tankunpeng",
+  "homepage": "http://gitlab.light.fang.com/fex/platfrom-fangfis",
+  "repository": "http://gitlab.light.fang.com/fex/platfrom-fangfis",
+  "description": "A simple and smart gulp workflow for f2e.",
+  "main": "gulpfile.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.7.7",
+    "@babel/polyfill": "^7.7.0",
+    "@babel/preset-env": "^7.7.7",
+    "chalk": "^3.0.0",
+    "core-js": "^3.6.0",
+    "del": "^5.1.0",
+    "gulp": "^4.0.2",
+    "gulp-autoprefixer": "^7.0.1",
+    "gulp-babel": "^8.0.0",
+    "gulp-changed": "^4.0.2",
+    "gulp-clean-css": "^4.2.0",
+    "gulp-fangfis-combo": "^0.0.6",
+    "gulp-pipe": "^1.0.4",
+    "gulp-plumber": "^1.2.1",
+    "gulp-replace": "^1.0.0",
+    "gulp-shell": "^0.7.1",
+    "gulp-sourcemaps": "^2.6.5",
+    "through2": "^3.0.1",
+    "vinyl": "^2.2.0",
+    "vinyl-ftp": "^0.6.1"
+  },
+  "dependencies": {}
+}
