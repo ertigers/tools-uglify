@@ -1,16 +1,22 @@
+// 封装-请求接口
 const QxRequest = (method, url, params)=> {
-  return new Promise((resolve, reject) => {
-    // 创建XMLHttpRequest对象
+  return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
-    // 状态改变时的回调
     xhr.onreadystatechange = function () {
-      // readyState为4的时候已接收完毕
       if (xhr.readyState === 4) {
-        // 状态码200表示成功
-        if (xhr.status === 200) {
-          resolve(JSON.parse(xhr.responseText));
+        if (xhr.status === 200) {   // 成功
+          if(xhr.responseText.startsWith('<')) {  // xml
+            let responseText = xml2json(xhr.responseText)
+            resolve(responseText);
+          }else {  // json
+            resolve(JSON.parse(xhr.responseText));
+          }
         } else {
-          reject(xhr.status);
+          let query = {
+            code: -2,
+            msg: '连接异常！'
+          }
+          resolve(query);  // 网络错误或者请求终止
         }
       }
     };
@@ -30,25 +36,14 @@ const QxRequest = (method, url, params)=> {
       url = params ? url + "?" + params : url;
       xhr.open(method, url, true);
       xhr.timeout = 8000; // 超时时间，单位是毫秒
-      // 超时
-      xhr.ontimeout = function (e) {
-        // XMLHttpRequest 超时。在此做某事。
-        window.alert('登录超时')
-      };
       xhr.send();
     }
 
     //post
     if (method === "post" || method === "POST") {
       xhr.open(method, url, true);
-      // xhr.setRequestHeader("Content-type", "application/json; charset=utf-8");
       xhr.setRequestHeader("Accept", "*/*");
       xhr.timeout = 8000; // 超时时间，单位是毫秒
-      // 超时
-      xhr.ontimeout = function (e) {
-        // XMLHttpRequest 超时。在此做某事。
-        window.alert('登录超时')
-      };
       xhr.send(JSON.stringify(params));
     }
   });
@@ -58,62 +53,7 @@ const xml2json = (val)=>{
   let x2js = new X2JS();
   return x2js.xml_str2json(val)
 }
-
-const QxRequestXML = (method, url, params)=> {
-  return new Promise((resolve, reject) => {
-    // 创建XMLHttpRequest对象
-    const xhr = new XMLHttpRequest();
-    // 状态改变时的回调
-    xhr.onreadystatechange = function () {
-      // readyState为4的时候已接收完毕
-      if (xhr.readyState === 4) {
-        // 状态码200表示成功
-        if (xhr.status === 200) {
-          let responseText = xml2json(xhr.responseText)
-          resolve(responseText);
-        } else {
-          reject(xhr.status);
-        }
-      }
-    };
-
-    //post
-    if (method === "post" || method === "POST") {
-      xhr.open(method, url, true);
-      // xhr.setRequestHeader("Content-type", "application/json; charset=utf-8");
-      xhr.setRequestHeader("Accept", "*/*");
-      xhr.send(JSON.stringify(params));
-    }
-  });
-}
-
-const QxRequestXML2 = (method, url, params)=> {
-  return new Promise((resolve, reject) => {
-    // 创建XMLHttpRequest对象
-    const xhr = new XMLHttpRequest();
-    // 状态改变时的回调
-    xhr.onreadystatechange = function () {
-      // readyState为4的时候已接收完毕
-      if (xhr.readyState === 4) {
-        // 状态码200表示成功
-        if (xhr.status === 200) {
-          resolve(xhr.responseText);
-        } else {
-          reject(xhr.status);
-        }
-      }
-    };
-
-    //post
-    if (method === "post" || method === "POST") {
-      xhr.open(method, url, true);
-      // xhr.setRequestHeader("Content-type", "application/json; charset=utf-8");
-      xhr.setRequestHeader("Accept", "*/*");
-      xhr.send(JSON.stringify(params));
-    }
-  });
-}
-
+ 
 const base_url = "http://127.0.0.1:9585/icvs2/"; // 本地插件
 
 const webcu2plugin = {
@@ -195,21 +135,21 @@ const webcu2plugin = {
       xml = '<?xml version="1.0" encoding="UTF-8"?><M Type="ComReq"><C Type="G" Prio="1" EPID="system" Lang="zh_CN"> <Res Type="IV" Idx="'+idx+'" OptID="C_PTZ_AugmentAperture" Stream="0"><Param></Param></Res></C></M>';
       let url = `${base_url}RawRequest?dstType=201&dstID=${puid}&token=${token}`
       let params= { xml }
-      return QxRequestXML('post',url, params);
+      return QxRequest('post',url, params);
     }
     if (control === "minish") { 
       // 缩小光圈
       xml = '<?xml version="1.0" encoding="UTF-8"?><M Type="ComReq"><C Type="G" Prio="1" EPID="system" Lang="zh_CN"><Res Type="IV" Idx="'+idx+'" OptID="C_PTZ_MinishAperture" Stream="0"><Param></Param></Res></C></M>';
       let url = `${base_url}RawRequest?dstType=201&dstID=${puid}&token=${token}`
       let params= { xml }
-      return QxRequestXML('post', url , params);
+      return QxRequest('post', url , params);
     } 
     if (control === "stopaperture") { 
       // 停止光圈
       xml = '<?xml version="1.0" encoding="UTF-8"?><M Type="ComReq"><C Type="G" Prio="1" EPID="system" Lang="zh_CN"><Res Type="IV" Idx="'+idx+'" OptID="C_PTZ_StopApertureZoom" Stream="0"><Param></Param></Res></C></M>';
       let url = `${base_url}RawRequest?dstType=201&dstID=${puid}&token=${token}`
       let params= { xml }
-      return QxRequestXML('post', url , params);
+      return QxRequest('post', url , params);
     }
   },
 
@@ -230,7 +170,7 @@ const webcu2plugin = {
     </M>`
     let url = `${base_url}RawRequest?dstType=201&dstID=${puid}&token=${token}`
     let params= { xml }
-    let data = await QxRequestXML('post', url , params);
+    let data = await QxRequest('post', url , params);
     try {
       result.rows = data.M.C.Res.Param.Preset
       result.code = data.M.C._SPError
@@ -409,7 +349,7 @@ const webcu2plugin = {
     let xml = '<?xml version="1.0" encoding="UTF-8"?><M Type="ComReq"><C Type="C" EPID="'+epid+'"><Res Type="ST" Idx="'+idx+'" OptID="C_GS_SubscribeGPSData"><Param></Param></Res></C><OSets><Res OType="201" OID="'+puid+'" Type="GPS" Idx="'+idx+'"></Res></OSets></M>'
     let url = base_url+'RawRequest?dstType=33&token='+token;
     let params1 = { xml }
-    return QxRequestXML2('POST',url,params1)
+    return QxRequest('POST',url,params1)
   },
 
   // 查询设备最新GPS-当前定位
@@ -423,7 +363,7 @@ const webcu2plugin = {
     let xml = '<?xml version="1.0" encoding="UTF-8"?><M Type="ComReq"><C Type="C" EPID="'+epid+'"><Res Type="ST" Idx="0" OptID="C_GS_QueryLastGPSData"><Param></Param></Res></C>'+Osets+'</M>'
     let url = base_url+'RawRequest?dstType=33&dstID=""&token='+token;
     let params1 = { xml }
-    return QxRequestXML2('POST',url,params1)
+    return QxRequest('POST',url,params1)
   },
 
   // 查询历史GPS信息
@@ -441,6 +381,6 @@ const webcu2plugin = {
     let xml = '<?xml version="1.0" encoding="UTF-8"?><M Type="ComReq"><C Type="C" EPID="'+epid+'"><Res Type="ST" Idx="0" OptID="C_GS_QueryHistoryGPSData"><Param  Offset="'+offset+'" Count="'+count+'" Begin="'+begin+'" End="'+end+'"></Param></Res></C>'+Osets+'</M>'
     let url = base_url+'RawRequest?dstType=33&dstID=""&token='+token;
     let params1 = { xml }
-    return QxRequestXML2('POST',url,params1)
+    return QxRequest('POST',url,params1)
   }
 };
