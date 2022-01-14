@@ -72,71 +72,81 @@ const webcu2plugin = {
       let ws = new WebSocket(url);
       ws.onmessage = (evt) => {
         if (typeof evt === "object" && evt.data && callback) {
-          let msg = xml2json(evt.data);
+          let msg = xml2json(evt.data).M;
           // callback(msg)
-          if (msg.Type === "PlayEvent") {  // 视频播放状态
-            let statusText = "";
-            if (msg.Status === "1") {
-              statusText = "连接中~";
-            }
-            if (msg.Status === "2") {
-              statusText = "播放中~";
-            }
-            if (msg.Status === "3") {
-              statusText = "播放完成~";
-            }
-            if (msg.Status === "4") {
-              statusText = "播放失败~";
-            }
+          // 第一类事件(插件处理的)
+          if (msg._Type === "PlayEvent") {  // 视频播放状态
             let params = {
               type: 'playEvent',
               data: {
-                status: msg.Status,
-                statusText: statusText,
-                palyId: msg.PlayID,
+                status: msg._Status,
+                palyId: msg._PlayID,
               }
             }
             callback(params)
           }
+          if(msg._Type === "DownlaodEvent") {  // 视频下载状态
+            let params = {
+              type: 'downlaodEvent',
+              data: {
+                status: msg._Status,
+                palyId: msg._DownloadID,
+              }
+            }
+            callback(params)
+          }
+          // 第二类事件(ICVS平台返回的)
           let event = msg.E || null;
           if (event) {
-            if (event.ID === "E_CU_Online") {  // 用户上线
+            if (event._ID === "E_CU_Online") {  // 用户上线
               let params = {
                 type: 'userOnline',
                 data: {
-                  UserID: event.Desc.UserID,
-                  EPID: event.Desc.EPID
+                  UserID: event.Desc._UserID,
+                  EPID: event.Desc._EPID
                 }
               }
               callback(params)
-            } else if (event.ID === "E_CU_Offline") {  // 用户下线
+            } else if (event._ID === "E_CU_Offline") {  // 用户下线
               let params = {
                 type: 'userOffline',
                 data: {
-                  UserID: event.Desc.UserID,
-                  EPID: event.Desc.EPID
+                  UserID: event.Desc._UserID,
+                  EPID: event.Desc._EPID
                 }
               }
               callback(params)
-            } else if (event.ID === "E_PU_Online") {   // 设备上线
+            } else if (event._ID === "E_PU_Online") {   // 设备上线
+              let params = {
+                type: 'deviceOnline',
+                data: {
+                  Name: event.Src._Name,
+                  Type: event.Src._Type,
+                  Idx: event.Src._Idx,
+                  Desc: event.Src._Desc,
+                }
+              }
+              callback(params)
+            } else if (event._ID === "E_PU_Offline") {   // 设备下线
+              let params = {
+                type: 'deviceOffline',
+                data: {
+                  Name: event.Src._Name,
+                  Type: event.Src._Type,
+                  Idx: event.Src._Idx,
+                  Desc: event.Src._Desc,
+                }
+              }
+              callback(params)
+            }else if (event._ID === "E_GS_GPSDataUpdate") {   // gps信息更新
               // let params = {
-              //   type: 'deviceOnline',
+              //   type: 'gpsDataUpdate',
               //   data: {
-              //     UserID: event.Desc.UserID,
-              //     EPID: event.Desc.EPID
               //   }
               // }
               // callback(params)
-            } else if (event.ID === "E_PU_Offline") {   // 设备下线
-              // let params = {
-              //   type: 'deviceOffline',
-              //   data: {
-              //     UserID: event.Desc.UserID,
-              //     EPID: event.Desc.EPID
-              //   }
-              // }
-              // callback(params)
-            } else if (event.ID === "PlayNtf") {
+            }
+             else if (event._ID === "PlayNtf") {
               console.log("playNtf");
               console.log(event);
             }
