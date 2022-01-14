@@ -58,8 +58,107 @@ const base_url = "http://127.0.0.1:9585/icvs2/"; // 本地插件
 
 const webcu2plugin = {
   // 登录
-  login: (params) => {
-    return QxRequest('post',`${base_url}login`, params);
+  login: async (params, callback) => {
+    let reslut = {
+      code: -1,
+    };
+    let res = await QxRequest("post", `${base_url}login`, params);
+    if (res.msg === "OK") {
+      reslut.code = 0;
+      reslut.msg = res.msg;
+      reslut.token = res.token;
+      // 连接ws
+      let url = websocket_url + "?token=" + res.token;
+      let ws = new WebSocket(url);
+      ws.onmessage = (evt) => {
+        if (typeof evt === "object" && evt.data && callback) {
+          let msg = xml2json(evt.data);
+          // callback(msg)
+          if (msg.Type === "PlayEvent") {  // 视频播放状态
+            let statusText = "";
+            if (msg.Status === "1") {
+              statusText = "连接中~";
+            }
+            if (msg.Status === "2") {
+              statusText = "播放中~";
+            }
+            if (msg.Status === "3") {
+              statusText = "播放完成~";
+            }
+            if (msg.Status === "4") {
+              statusText = "播放失败~";
+            }
+            let params = {
+              type: 'playEvent',
+              data: {
+                status: msg.Status,
+                statusText: statusText,
+                palyId: msg.PlayID,
+              }
+            }
+            callback(params)
+          }
+          let event = msg.E || null;
+          if (event) {
+            if (event.ID === "E_CU_Online") {  // 用户上线
+              let params = {
+                type: 'userOnline',
+                data: {
+                  UserID: event.Desc.UserID,
+                  EPID: event.Desc.EPID
+                }
+              }
+              callback(params)
+            } else if (event.ID === "E_CU_Offline") {  // 用户下线
+              let params = {
+                type: 'userOffline',
+                data: {
+                  UserID: event.Desc.UserID,
+                  EPID: event.Desc.EPID
+                }
+              }
+              callback(params)
+            } else if (event.ID === "E_PU_Online") {   // 设备上线
+              // let params = {
+              //   type: 'deviceOnline',
+              //   data: {
+              //     UserID: event.Desc.UserID,
+              //     EPID: event.Desc.EPID
+              //   }
+              // }
+              // callback(params)
+            } else if (event.ID === "E_PU_Offline") {   // 设备下线
+              // let params = {
+              //   type: 'deviceOffline',
+              //   data: {
+              //     UserID: event.Desc.UserID,
+              //     EPID: event.Desc.EPID
+              //   }
+              // }
+              // callback(params)
+            } else if (event.ID === "PlayNtf") {
+              console.log("playNtf");
+              console.log(event);
+            }
+          }
+        }
+      };
+      ws.onclose = ()=> {
+        let params = {
+          type: 'Error',
+        }
+        callback(params)
+      };
+      ws.onerror = function () {
+        let params = {
+          type: 'Error',
+        }
+        callback(params)
+      };
+    }else {
+      reslut = res;
+    }
+    return reslut;
   },
 
   // 获取设备列表
@@ -154,7 +253,7 @@ const webcu2plugin = {
   },
 
   // 获取预置位列表
-  async getPresetPosList(query) {
+  getPresetPosList: async (query)=> {
     let result = {
       code: -1,
       rows:[],
